@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ControlPanel } from './components/ControlPanel';
-import { SimulationScene } from './components/Simulation3D';
-import { Dashboard } from './components/Dashboard';
-import { SimulationParams, SystemState, PrincipleType, SensorReadings } from './types';
-import { calculateNextState } from './utils/physics';
-import { UPDATE_INTERVAL_MS, HISTORY_LENGTH } from './constants';
+import React, { useState, useEffect } from "react";
+import { ControlPanel } from "./components/ControlPanel";
+import { SimulationScene } from "./components/Simulation3D";
+import { Dashboard } from "./components/Dashboard";
+import { SimulationParams, SensorReadings, PrincipleType } from "./types";
+import { calculateNextState } from "./utils/physics";
+import { UPDATE_INTERVAL_MS, HISTORY_LENGTH } from "./constants";
 
 const INITIAL_PARAMS: SimulationParams = {
   inputPressure: 250000,
@@ -13,7 +13,7 @@ const INITIAL_PARAMS: SimulationParams = {
   soilTemperature: 15,
   soilPorosity: 0.4,
   isLeaking: false,
-  leakSeverity: 0.5
+  leakSeverity: 0.5,
 };
 
 const INITIAL_READINGS: SensorReadings = {
@@ -23,71 +23,75 @@ const INITIAL_READINGS: SensorReadings = {
   soilMoisture: 0.05,
   vibrationIntensity: 1.5,
   soilTempReading: 15,
-  lpi: 0
+  lpi: 0,
 };
 
 const App: React.FC = () => {
   const [params, setParams] = useState<SimulationParams>(INITIAL_PARAMS);
-  const [selectedPrinciple, setSelectedPrinciple] = useState<PrincipleType>(PrincipleType.OVERVIEW);
-  
+  const [selectedPrinciple, setSelectedPrinciple] = useState<PrincipleType>(
+    PrincipleType.OVERVIEW
+  );
   const [readings, setReadings] = useState<SensorReadings>(INITIAL_READINGS);
   const [history, setHistory] = useState<SensorReadings[]>([]);
 
-  // Simulation Loop
   useEffect(() => {
     const interval = setInterval(() => {
-      setReadings(prev => {
-        const next = calculateNextState(params, prev, UPDATE_INTERVAL_MS / 1000);
-        
-        setHistory(prevHist => {
+      setReadings((prev) => {
+        const next = calculateNextState(
+          params,
+          prev,
+          UPDATE_INTERVAL_MS / 1000
+        );
+        setHistory((prevHist) => {
           const newHist = [...prevHist, next];
-          if (newHist.length > HISTORY_LENGTH) {
+          if (newHist.length > HISTORY_LENGTH)
             return newHist.slice(newHist.length - HISTORY_LENGTH);
-          }
           return newHist;
         });
-
         return next;
       });
     }, UPDATE_INTERVAL_MS);
-
     return () => clearInterval(interval);
   }, [params]);
 
   return (
-    <div className="flex h-screen w-screen bg-slate-950 text-white font-sans overflow-hidden">
-      {/* Left Panel: Controls */}
-      <ControlPanel 
-        params={params} 
-        setParams={setParams} 
+    // Updated: min-h-screen allows scrolling. overflow-hidden is ONLY applied on desktop (md:).
+    <div className="flex flex-col md:flex-row min-h-screen w-full bg-slate-950 text-white font-sans md:overflow-hidden">
+      {/* Control Panel: Stacks on top on mobile */}
+      <ControlPanel
+        params={params}
+        setParams={setParams}
         selectedPrinciple={selectedPrinciple}
         setSelectedPrinciple={setSelectedPrinciple}
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-        
-        {/* Top: 3D Visualization */}
-        <div className="h-[55%] p-4 pb-2 relative z-10">
+      <div className="flex-1 flex flex-col h-full relative">
+        {/* 3D Scene: 50% height on mobile, 55% on desktop */}
+        <div className="h-[50vh] md:h-[55%] p-2 md:p-4 relative z-10 shrink-0">
           <SimulationScene params={params} readings={readings} />
         </div>
 
-        {/* Bottom: Data Dashboard */}
-        <div className="h-[45%] overflow-y-auto bg-slate-950 border-t border-slate-800">
-           <div className="sticky top-0 bg-slate-950/95 backdrop-blur z-20 px-6 py-2 border-b border-slate-800 flex justify-between items-center">
-              <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Real-Time Sensor Fusion Data</h2>
-              <div className="flex gap-4 text-xs font-mono text-slate-500">
-                  <span>Samples: {history.length}</span>
-                  <span>Update Rate: {1000/UPDATE_INTERVAL_MS}Hz</span>
-              </div>
-           </div>
-           <Dashboard 
-              history={history} 
-              currentReading={readings} 
-              activePrinciple={selectedPrinciple} 
-           />
-        </div>
+        {/* Dashboard: Flows naturally on mobile, scrollable container on desktop */}
+        <div className="flex-1 bg-slate-950 border-t border-slate-800 md:overflow-y-auto">
+          <div className="sticky top-0 bg-slate-950/95 backdrop-blur z-20 px-6 py-2 border-b border-slate-800 flex justify-between items-center">
+            <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest">
+              Real-Time Sensor Fusion Data
+            </h2>
+            <div className="flex gap-4 text-xs font-mono text-slate-500">
+              <span>Samples: {history.length}</span>
+              <span>Update Rate: {1000 / UPDATE_INTERVAL_MS}Hz</span>
+            </div>
+          </div>
 
+          <div className="p-4 md:p-0">
+            <Dashboard
+              history={history}
+              currentReading={readings}
+              activePrinciple={selectedPrinciple}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
