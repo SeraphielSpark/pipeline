@@ -55,45 +55,44 @@ const App: React.FC = () => {
   }, [params]);
 
   return (
-    // Updated: min-h-screen allows scrolling. overflow-hidden is ONLY applied on desktop (md:).
-    <div className="flex flex-col md:flex-row min-h-screen w-full bg-slate-950 text-white font-sans md:overflow-hidden">
-      {/* Control Panel: Stacks on top on mobile */}
-      <ControlPanel
-        params={params}
-        setParams={setParams}
-        selectedPrinciple={selectedPrinciple}
-        setSelectedPrinciple={setSelectedPrinciple}
-      />
+    <>
+      <div className="flex flex-col md:flex-row min-h-screen w-full bg-slate-950 text-white font-sans md:overflow-hidden">
+        <ControlPanel
+          params={params}
+          setParams={setParams}
+          selectedPrinciple={selectedPrinciple}
+          setSelectedPrinciple={setSelectedPrinciple}
+        />
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-full relative">
-        {/* 3D Scene: 50% height on mobile, 55% on desktop */}
-        <div className="h-[50vh] md:h-[55%] p-2 md:p-4 relative z-10 shrink-0">
-          <SimulationScene params={params} readings={readings} />
-        </div>
-
-        {/* Dashboard: Flows naturally on mobile, scrollable container on desktop */}
-        <div className="flex-1 bg-slate-950 border-t border-slate-800 md:overflow-y-auto">
-          <div className="sticky top-0 bg-slate-950/95 backdrop-blur z-20 px-6 py-2 border-b border-slate-800 flex justify-between items-center">
-            <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest">
-              Real-Time Sensor Fusion Data
-            </h2>
-            <div className="flex gap-4 text-xs font-mono text-slate-500">
-              <span>Samples: {history.length}</span>
-              <span>Update Rate: {1000 / UPDATE_INTERVAL_MS}Hz</span>
-            </div>
+        <div className="flex-1 flex flex-col h-full relative">
+          <div className="h-[50vh] md:h-[55%] p-2 md:p-4 relative z-10 shrink-0">
+            <SimulationScene params={params} readings={readings} />
           </div>
 
-          <div className="p-4 md:p-0">
-            <Dashboard
-              history={history}
-              currentReading={readings}
-              activePrinciple={selectedPrinciple}
-            />
+          <div className="flex-1 bg-slate-950 border-t border-slate-800 md:overflow-y-auto">
+            <div className="sticky top-0 bg-slate-950/95 backdrop-blur z-20 px-6 py-2 border-b border-slate-800 flex justify-between items-center">
+              <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest">
+                Real-Time Sensor Fusion Data
+              </h2>
+              <div className="flex gap-4 text-xs font-mono text-slate-500">
+                <span>Samples: {history.length}</span>
+                <span>Update Rate: {1000 / UPDATE_INTERVAL_MS}Hz</span>
+              </div>
+            </div>
+
+            <div className="p-4 md:p-0">
+              {/* Passed params here to enable Input vs Output comparison */}
+              <Dashboard
+                history={history}
+                currentReading={readings}
+                activePrinciple={selectedPrinciple}
+                params={params}
+              />
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
