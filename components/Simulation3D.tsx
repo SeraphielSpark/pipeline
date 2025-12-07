@@ -3,38 +3,291 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import {
   OrbitControls,
   PerspectiveCamera,
+  Environment,
   Cylinder,
   Sparkles,
   Grid,
   Html,
 } from "@react-three/drei";
 import * as THREE from "three";
-import { SimulationParams, SensorReadings } from "../types";
+import { SimulationParams, SensorReadings, PrincipleType } from "../types";
+import {
+  Activity,
+  Thermometer,
+  Droplets,
+  Zap,
+  BarChart3,
+  ArrowRight,
+} from "lucide-react";
 
 interface Simulation3DProps {
   params: SimulationParams;
   readings: SensorReadings;
+  activePrinciple: PrincipleType;
 }
 
+// --- 1. Top Right Readings Overlay (Static Summary) ---
+const ReadingsOverlay: React.FC<{
+  params: SimulationParams;
+  readings: SensorReadings;
+  activePrinciple: PrincipleType;
+}> = ({ params, readings, activePrinciple }) => {
+  const ReadingItem = ({ label, value, unit, color }: any) => (
+    <div className="flex justify-between items-end border-b border-slate-700/50 pb-1 mb-1 last:border-0 last:mb-0">
+      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+        {label}
+      </span>
+      <div className="text-right">
+        <span className={`text-lg font-mono font-bold ${color} leading-none`}>
+          {value}
+        </span>
+        <span className="text-[10px] text-slate-500 ml-1">{unit}</span>
+      </div>
+    </div>
+  );
+
+  const CardContainer = ({ title, icon: Icon, children }: any) => (
+    <div className="absolute top-4 right-4 bg-slate-900/95 backdrop-blur-md border border-slate-600 p-4 rounded-xl shadow-2xl w-60 pointer-events-none select-none z-50">
+      <div className="flex items-center gap-2 mb-3 border-b border-slate-700 pb-2">
+        <Icon size={16} className="text-blue-400" />
+        <span className="text-xs font-bold text-slate-200 uppercase">
+          {title}
+        </span>
+      </div>
+      <div className="flex flex-col gap-2">{children}</div>
+    </div>
+  );
+
+  switch (activePrinciple) {
+    case PrincipleType.PRESSURE:
+      return (
+        <CardContainer title="Pressure Dynamics" icon={BarChart3}>
+          <ReadingItem
+            label="Input (Pin)"
+            value={(params.inputPressure / 1000).toLocaleString()}
+            unit="kPa"
+            color="text-blue-400"
+          />
+          <ReadingItem
+            label="Sensor (Pout)"
+            value={(readings.pressureOut / 1000).toFixed(1)}
+            unit="kPa"
+            color="text-emerald-400"
+          />
+          <ReadingItem
+            label="ΔP (Drop)"
+            value={(
+              (params.inputPressure - readings.pressureOut) /
+              1000
+            ).toFixed(1)}
+            unit="kPa"
+            color="text-red-400"
+          />
+        </CardContainer>
+      );
+    case PrincipleType.FLOW:
+      return (
+        <CardContainer title="Mass Balance" icon={Activity}>
+          <ReadingItem
+            label="Inflow (Qin)"
+            value={params.inputFlowRate}
+            unit="m³/s"
+            color="text-blue-400"
+          />
+          <ReadingItem
+            label="Outflow (Qout)"
+            value={readings.flowOut.toFixed(2)}
+            unit="m³/s"
+            color="text-emerald-400"
+          />
+          <ReadingItem
+            label="Loss"
+            value={(params.inputFlowRate - readings.flowOut).toFixed(2)}
+            unit="m³/s"
+            color="text-red-400"
+          />
+        </CardContainer>
+      );
+    case PrincipleType.THERMAL:
+      return (
+        <CardContainer title="Thermodynamics" icon={Thermometer}>
+          <ReadingItem
+            label="Fluid Temp"
+            value={params.fluidTemperature}
+            unit="°C"
+            color="text-rose-400"
+          />
+          <ReadingItem
+            label="Soil Temp"
+            value={readings.soilTempReading.toFixed(2)}
+            unit="°C"
+            color="text-orange-400"
+          />
+          <ReadingItem
+            label="Gradient ΔT"
+            value={Math.abs(
+              params.fluidTemperature - readings.soilTempReading
+            ).toFixed(2)}
+            unit="°C"
+            color="text-slate-300"
+          />
+        </CardContainer>
+      );
+    case PrincipleType.ACOUSTIC:
+      return (
+        <CardContainer title="Vibro-Acoustics" icon={Zap}>
+          <ReadingItem
+            label="Noise Floor"
+            value={(params.inputFlowRate / 2 + 10).toFixed(1)}
+            unit="dB"
+            color="text-slate-500"
+          />
+          <ReadingItem
+            label="Measured"
+            value={readings.vibrationIntensity.toFixed(1)}
+            unit="dB"
+            color="text-amber-400"
+          />
+          <div className="mt-2 text-[10px] text-center text-slate-500 font-mono border-t border-slate-800 pt-1">
+            STATUS:{" "}
+            {readings.vibrationIntensity > 40
+              ? "CAVITATION DETECTED"
+              : "NORMAL FLOW"}
+          </div>
+        </CardContainer>
+      );
+    case PrincipleType.IMPEDANCE:
+      return (
+        <CardContainer title="Soil Impedance" icon={Droplets}>
+          <ReadingItem
+            label="Saturation"
+            value={(readings.soilMoisture * 100).toFixed(0)}
+            unit="%"
+            color="text-cyan-400"
+          />
+          <ReadingItem
+            label="Resistance"
+            value={Math.round(10000 * (1 - readings.soilMoisture))}
+            unit="Ω"
+            color="text-slate-300"
+          />
+        </CardContainer>
+      );
+    default:
+      return null;
+  }
+};
+
+// --- 2. In-Scene 3D Labels (Floating on Pipe) ---
+const InSceneLabels: React.FC<{
+  params: SimulationParams;
+  readings: SensorReadings;
+  activePrinciple: PrincipleType;
+}> = ({ params, readings, activePrinciple }) => {
+  // Label Component
+  const Label3D = ({ position, label, value, unit, color }: any) => (
+    <Html position={position} center distanceFactor={12}>
+      <div className="flex flex-col items-center pointer-events-none">
+        <div
+          className={`bg-slate-900/90 backdrop-blur border border-slate-600 px-3 py-1.5 rounded-lg shadow-xl flex flex-col items-center min-w-[80px]`}
+        >
+          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">
+            {label}
+          </span>
+          <div className="flex items-baseline gap-1">
+            <span className={`text-lg font-mono font-bold ${color}`}>
+              {value}
+            </span>
+            <span className="text-[10px] text-slate-500">{unit}</span>
+          </div>
+        </div>
+        {/* Arrow pointing down to pipe */}
+        <div className="w-0.5 h-4 bg-slate-600/50 mt-[-1px]"></div>
+        <div className="w-2 h-2 rounded-full bg-slate-500 ring-2 ring-slate-900"></div>
+      </div>
+    </Html>
+  );
+
+  switch (activePrinciple) {
+    case PrincipleType.PRESSURE:
+      return (
+        <>
+          <Label3D
+            position={[-9, 2.5, 0]}
+            label="Pin"
+            value={(params.inputPressure / 1000).toLocaleString()}
+            unit="kPa"
+            color="text-blue-400"
+          />
+          <Label3D
+            position={[9, 2.5, 0]}
+            label="Pout"
+            value={(readings.pressureOut / 1000).toFixed(1)}
+            unit="kPa"
+            color="text-emerald-400"
+          />
+        </>
+      );
+    case PrincipleType.FLOW:
+      return (
+        <>
+          <Label3D
+            position={[-9, 2.5, 0]}
+            label="Qin"
+            value={params.inputFlowRate}
+            unit="m³/s"
+            color="text-blue-400"
+          />
+          <Label3D
+            position={[9, 2.5, 0]}
+            label="Qout"
+            value={readings.flowOut.toFixed(2)}
+            unit="m³/s"
+            color="text-emerald-400"
+          />
+        </>
+      );
+    case PrincipleType.THERMAL:
+      return (
+        <>
+          <Label3D
+            position={[-9, 2.5, 0]}
+            label="T-Fluid"
+            value={params.fluidTemperature}
+            unit="°C"
+            color="text-rose-400"
+          />
+          <Label3D
+            position={[0, 3, 0]}
+            label="T-Soil"
+            value={readings.soilTempReading.toFixed(1)}
+            unit="°C"
+            color="text-orange-400"
+          />
+        </>
+      );
+    default:
+      return null;
+  }
+};
+
+// --- 3. 3D Scene Components (Flow, Pipe, etc.) ---
 const FlowParticles: React.FC<{ speed: number; isLeaking: boolean }> = ({
   speed,
   isLeaking,
 }) => {
-  const count = 400; // Increased count
+  const count = 400;
   const mesh = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
   const particles = useMemo(() => {
     const temp = [];
     for (let i = 0; i < count; i++) {
-      const t = Math.random() * 100;
-      const factor = Math.random();
-      const speedOffset = Math.random();
-      // Tighter spread to ensure they are inside the pipe visually
       const x = (Math.random() - 0.5) * 0.6;
       const y = (Math.random() - 0.5) * 20;
       const z = (Math.random() - 0.5) * 0.6;
-      temp.push({ t, factor, speedOffset, x, y, z });
+      const speedOffset = Math.random();
+      temp.push({ speedOffset, x, y, z });
     }
     return temp;
   }, []);
@@ -47,8 +300,6 @@ const FlowParticles: React.FC<{ speed: number; isLeaking: boolean }> = ({
       if (y < -10) y = 10;
       particle.y = y;
       dummy.position.set(particle.x, y, particle.z);
-
-      // Increased scale for better visibility
       dummy.scale.setScalar(0.08);
       dummy.updateMatrix();
       mesh.current!.setMatrixAt(i, dummy.matrix);
@@ -63,7 +314,6 @@ const FlowParticles: React.FC<{ speed: number; isLeaking: boolean }> = ({
       frustumCulled={false}
     >
       <sphereGeometry args={[1, 8, 8]} />
-      {/* Emissive material makes it glow and easier to see */}
       <meshStandardMaterial
         color="#3b82f6"
         emissive="#3b82f6"
@@ -104,11 +354,14 @@ const LeakEffect: React.FC<{ isLeaking: boolean; severity: number }> = ({
   );
 };
 
-const PipeSystem: React.FC<Simulation3DProps> = ({ params, readings }) => {
+const PipeSystem: React.FC<{
+  params: SimulationParams;
+  readings: SensorReadings;
+  activePrinciple: PrincipleType;
+}> = ({ params, readings, activePrinciple }) => {
   return (
     <group>
       <group rotation={[0, 0, Math.PI / 2]}>
-        {/* Made pipe glassier and less opaque so particles show through */}
         <Cylinder args={[0.65, 0.65, 20, 32]} position={[0, 0, 0]}>
           <meshPhysicalMaterial
             color="#94a3b8"
@@ -119,7 +372,7 @@ const PipeSystem: React.FC<Simulation3DProps> = ({ params, readings }) => {
             transmission={0.9}
             thickness={0.1}
             side={THREE.DoubleSide}
-            depthWrite={false} // Helps with transparency sorting
+            depthWrite={false}
           />
         </Cylinder>
         <FlowParticles
@@ -128,8 +381,8 @@ const PipeSystem: React.FC<Simulation3DProps> = ({ params, readings }) => {
         />
       </group>
 
-      {/* Simplified Sensor Nodes */}
-      <group position={[-8, 0, 0]}>
+      {/* Sensor Nodes */}
+      <group position={[-9, 0, 0]}>
         <mesh>
           <sphereGeometry args={[0.8, 16, 16]} />
           <meshStandardMaterial
@@ -139,7 +392,7 @@ const PipeSystem: React.FC<Simulation3DProps> = ({ params, readings }) => {
           />
         </mesh>
       </group>
-      <group position={[8, 0, 0]}>
+      <group position={[9, 0, 0]}>
         <mesh>
           <sphereGeometry args={[0.8, 16, 16]} />
           <meshStandardMaterial
@@ -152,7 +405,7 @@ const PipeSystem: React.FC<Simulation3DProps> = ({ params, readings }) => {
 
       <group position={[0, 0, 0]}>
         {params.isLeaking && (
-          <Html position={[0, 2.5, 0]}>
+          <Html position={[0, 2.5, 0]} center>
             <div className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded font-bold animate-bounce shadow-lg shadow-red-500/50 whitespace-nowrap">
               ⚠️ LEAKING
             </div>
@@ -174,6 +427,13 @@ const PipeSystem: React.FC<Simulation3DProps> = ({ params, readings }) => {
           cellThickness={0.5}
         />
       </group>
+
+      {/* Floating Labels attached to the pipe */}
+      <InSceneLabels
+        params={params}
+        readings={readings}
+        activePrinciple={activePrinciple}
+      />
     </group>
   );
 };
@@ -181,16 +441,22 @@ const PipeSystem: React.FC<Simulation3DProps> = ({ params, readings }) => {
 export const SimulationScene: React.FC<Simulation3DProps> = (props) => {
   return (
     <div className="w-full h-full bg-slate-950/50 relative rounded-xl overflow-hidden border border-slate-800/50">
+      {/* Absolute Overlay for Readings (Top Right) */}
+      <ReadingsOverlay
+        params={props.params}
+        readings={props.readings}
+        activePrinciple={props.activePrinciple}
+      />
+
       <Canvas shadows dpr={[1, 2]}>
         <Suspense fallback={null}>
-          {/* Adjusted Camera for better initial view on small screens */}
-          <PerspectiveCamera makeDefault position={[0, 4, 14]} fov={50} />
+          <PerspectiveCamera makeDefault position={[0, 4, 16]} fov={50} />
           <OrbitControls
             enablePan={false}
             enableZoom={true}
             maxPolarAngle={Math.PI / 2}
             minDistance={5}
-            maxDistance={25}
+            maxDistance={30}
           />
 
           <ambientLight intensity={0.2} />

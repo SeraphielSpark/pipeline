@@ -13,34 +13,29 @@ export const HISTORY_LENGTH = 60;
 export const UPDATE_INTERVAL_MS = 200;
 
 export const PRINCIPLE_DETAILS = {
-  FLOW: {
-    title: "Principle I: Mass Balance",
-    formula: "Q_leak = Q_in - Q_out - dV/dt",
-    description: "Compares input vs. output mass. In a sealed system, these must be equal. A discrepancy indicates fluid loss."
-  },
   PRESSURE: {
-    title: "Principle II: Pressure Dynamics",
-    formula: "Q = Cd * A * sqrt(2*(P_pipe - P_soil)/rho)",
-    description: "A leak acts as an orifice. Fluid escaping creates a localized pressure drop proportional to the leak size."
+    title: "Principle I: Pascal's Principle",
+    formula: "ΔP = Pin - Pout",
+    description: "According to Pascal's Principle, pressure applied to a fluid is transmitted equally. A leak disrupts this, creating a measurable pressure drop (Pin - Pout)."
+  },
+  FLOW: {
+    title: "Principle II: Bernoulli's Equation",
+    formula: "Q_leak = Qin - Qout",
+    description: "Based on the Conservation of Mass and Bernoulli's principle, the flow rate entering the pipe (Qin) must equal the flow exiting (Qout) unless fluid is lost to a leak."
   },
   THERMAL: {
-    title: "Principle III: Thermodynamics",
-    formula: "dT/dt = (Q_leak * cp * (T_fluid - T_soil)) / (m * c)",
-    description: "Leaking fluid alters the surrounding soil temperature profile based on convective heat transfer."
+    title: "Principle III: Thermal Gradient",
+    formula: "ΔT = |T_fluid - T_soil|",
+    description: "Escaping fluid alters the local thermal equilibrium. We measure the anomaly between expected ambient soil temperature and the sensor reading."
   },
   ACOUSTIC: {
-    title: "Principle IV: Acoustics",
-    formula: "I(x) = I_0 * e^(-alpha * x)",
-    description: "Turbulence from escaping fluid generates high-frequency vibrations that propagate through the pipe wall."
+    title: "Principle IV: Vibro-Acoustics",
+    formula: "dB_leak > dB_ambient",
+    description: "Fluid escaping under pressure creates turbulence and cavitation, generating high-frequency acoustic vibrations significantly above baseline noise."
   },
   IMPEDANCE: {
     title: "Principle V: Soil Impedance",
-    formula: "R_soil = a / (phi^m * Sw^n)",
-    description: "Wet soil conducts electricity better than dry soil. Resistance drops drastically as saturation increases."
-  },
-  OVERVIEW: {
-    title: "System Synthesis (Grand Formula)",
-    formula: "LPI = Σ (w_i * Principle_i)",
-    description: "A weighted algorithm combining all sensor inputs to calculate a Leak Probability Index (LPI) to minimize false alarms."
+    formula: "Z_soil ∝ 1 / Moisture",
+    description: "Water is conductive. As leaking fluid saturates the soil, the electrical impedance (resistance) drops sharply compared to dry soil."
   }
 };

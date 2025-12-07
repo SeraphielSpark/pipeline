@@ -1,6 +1,6 @@
 import React from "react";
 import { SimulationParams, PrincipleType } from "../types";
-import { Play, Square, Settings, ChevronRight, Activity } from "lucide-react";
+import { Play, Square, Settings, Activity } from "lucide-react";
 import { PRINCIPLE_DETAILS } from "../constants";
 
 interface ControlPanelProps {
@@ -36,11 +36,9 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
           </div>
           <div>
             <h1 className="text-sm font-bold text-slate-200 tracking-wide">
-              SENTINEL OS
+              StarCords Pipeline
             </h1>
-            <p className="text-[10px] text-slate-500 font-mono">
-              Pipeline v1.0
-            </p>
+            <p className="text-[10px] text-slate-500 font-mono">v1.0</p>
           </div>
         </div>
         <div className="text-[10px] bg-slate-900 px-2 py-1 rounded text-slate-500 font-mono border border-slate-800">
@@ -48,7 +46,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         </div>
       </div>
 
-      {/* Primary Action - STICKY / ALWAYS VISIBLE */}
+      {/* Primary Action */}
       <div className="p-4 bg-slate-900 border-b border-slate-800">
         <button
           onClick={handleToggleLeak}
@@ -71,9 +69,8 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         </button>
       </div>
 
-      {/* Scrollable Settings Area */}
+      {/* Settings Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-slate-900/50">
-        {/* Leak Slider (Conditional) */}
         {params.isLeaking && (
           <div className="bg-red-950/30 border border-red-900/50 p-3 rounded-xl space-y-2 animate-in fade-in slide-in-from-top-2">
             <div className="flex justify-between items-center">
@@ -98,38 +95,35 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
           </div>
         )}
 
-        {/* Minimal Principle Tabs */}
+        {/* View Mode Buttons */}
         <div className="space-y-2">
           <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
             View Mode
           </h3>
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-2">
             {principles.map((p) => (
               <button
                 key={p}
                 onClick={() => setSelectedPrinciple(p)}
-                className={`px-3 py-1.5 text-xs rounded-full border transition-all
+                className={`flex-1 min-w-[45%] px-3 py-2 text-xs rounded-lg border transition-all text-center font-medium
                         ${
                           selectedPrinciple === p
-                            ? "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-900/50"
+                            ? "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-900/50 scale-105"
                             : "bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600"
                         }`}
               >
-                {p === "OVERVIEW"
-                  ? "Overview"
-                  : p.charAt(0) + p.slice(1).toLowerCase()}
+                {p.charAt(0) + p.slice(1).toLowerCase()}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Environmental Controls */}
+        {/* System Inputs */}
         <div className="space-y-4 pt-2">
           <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
             <Activity size={12} /> System Inputs
           </h3>
 
-          {/* Simplified Sliders */}
           {[
             {
               label: "Pressure",

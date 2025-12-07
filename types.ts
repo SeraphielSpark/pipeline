@@ -3,8 +3,7 @@ export enum PrincipleType {
   PRESSURE = 'PRESSURE',
   THERMAL = 'THERMAL',
   ACOUSTIC = 'ACOUSTIC',
-  IMPEDANCE = 'IMPEDANCE',
-  OVERVIEW = 'OVERVIEW'
+  IMPEDANCE = 'IMPEDANCE'
 }
 
 export interface SimulationParams {
