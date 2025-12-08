@@ -186,7 +186,7 @@ const InSceneLabels: React.FC<{
 }> = ({ params, readings, activePrinciple }) => {
   // Label Component
   const Label3D = ({ position, label, value, unit, color }: any) => (
-    <Html position={position} center distanceFactor={12}>
+    <Html position={position} center distanceFactor={12} zIndexRange={[100, 0]}>
       <div className="flex flex-col items-center pointer-events-none">
         <div
           className={`bg-slate-900/90 backdrop-blur border border-slate-600 px-3 py-1.5 rounded-lg shadow-xl flex flex-col items-center min-w-[80px]`}
@@ -450,13 +450,16 @@ export const SimulationScene: React.FC<Simulation3DProps> = (props) => {
 
       <Canvas shadows dpr={[1, 2]}>
         <Suspense fallback={null}>
-          <PerspectiveCamera makeDefault position={[0, 4, 16]} fov={50} />
+          {/* UPDATED: Position pushed back to z:22 for better mobile view */}
+          <PerspectiveCamera makeDefault position={[0, 5, 22]} fov={45} />
+
+          {/* UPDATED: Increased maxDistance for zooming out, enabled Pan */}
           <OrbitControls
-            enablePan={false}
+            enablePan={true}
             enableZoom={true}
             maxPolarAngle={Math.PI / 2}
-            minDistance={5}
-            maxDistance={30}
+            minDistance={2}
+            maxDistance={60}
           />
 
           <ambientLight intensity={0.2} />
@@ -468,7 +471,11 @@ export const SimulationScene: React.FC<Simulation3DProps> = (props) => {
             distance={10}
           />
 
-          <PipeSystem {...props} />
+          <PipeSystem
+            params={props.params}
+            readings={props.readings}
+            activePrinciple={props.activePrinciple}
+          />
         </Suspense>
       </Canvas>
     </div>
